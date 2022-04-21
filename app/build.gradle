@@ -7,16 +7,61 @@ plugins {
 
 android {
     compileSdk 31
+    def versionPropsFile = file('version.properties')
 
-    defaultConfig {
+
+    def increaseVersionCode= {
+        gradle.taskGraph.whenReady { taskGraph ->
+            if (taskGraph.hasTask(assembleRelease)) {
+                /* when run release task */
+                if (versionPropsFile.canRead()) {
+                    def Properties versionProps = new Properties()
+
+                    versionProps.load(new FileInputStream(versionPropsFile))
+
+                    def build = versionProps['VERSION_BUILD'].toInteger() + 1
+                    def code = versionProps['VERSION_CODE'].toInteger() + 1
+
+                    versionProps['VERSION_BUILD'] = build.toString()
+                    versionProps['VERSION_CODE'] = code.toString()
+                    versionProps.store(versionPropsFile.newWriter(), null)
+                } else {
+                    throw new GradleException("Could not read version.properties!")
+                }
+            }
+        }
+    }
+    /*defaultConfig {
         applicationId "com.ncr.hiltmulti"
         minSdk 21
         targetSdk 31
-        versionCode 1
+        //versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        versionCode versionBuild
+    }*/
+    if (versionPropsFile.canRead()) {
+        def Properties versionProps = new Properties()
+
+        versionProps.load(new FileInputStream(versionPropsFile))
+        def name = versionProps['VERSION_NAME']
+        def code = versionProps['VERSION_CODE'].toInteger() + 1
+        versionProps['VERSION_CODE']=code.toString()
+        versionProps.store(versionPropsFile.newWriter(), null)
+
+        defaultConfig {
+            applicationId "com.ncr.hiltmulti"
+            minSdk 21
+            targetSdk 31
+            versionName name
+            versionCode code
+          }
     }
+    else {
+        throw new GradleException("Could not read version.properties!")
+    }
+    increaseVersionCode()
 
     buildTypes {
         release {
@@ -53,3 +98,5 @@ dependencies {
 kapt {
     correctErrorTypes = true
 }
+
+
